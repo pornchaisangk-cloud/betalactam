@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>β-lactam Cross-reactivity Checker</title>
+<style>
+:root{--bg:#f7f8fa;--card:#fff;--text:#1d2430;--mute:#5d6878;--line:#dde2ea;--accent:#1d6fb8;
+--hi:#c62828;--hib:#fdeaea;--mo:#b26a00;--mob:#fff3e0;--lo:#2e7d32;--lob:#e8f5e9;--no:#455a64;--nob:#eceff1;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--card:#1b212a;--text:#e6eaf0;--mute:#9aa6b6;--line:#2f3846;--accent:#6db3f2;
+--hi:#ff8a80;--hib:#3a1d1d;--mo:#ffb74d;--mob:#3a2b12;--lo:#81c784;--lob:#1a2f1d;--no:#b0bec5;--nob:#252d36;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161c;--card:#1b212a;--text:#e6eaf0;--mute:#9aa6b6;--line:#2f3846;--accent:#6db3f2;
+--hi:#ff8a80;--hib:#3a1d1d;--mo:#ffb74d;--mob:#3a2b12;--lo:#81c784;--lob:#1a2f1d;--no:#b0bec5;--nob:#252d36;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Sarabun","Noto Sans Thai",system-ui,sans-serif;line-height:1.55}
+main{max-width:820px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+h1{font-size:1.3rem;margin:0 0 4px}
+.sub{color:var(--mute);font-size:.9rem;margin:0}
+.lang button{border:1px solid var(--line);background:var(--card);color:var(--text);padding:6px 12px;cursor:pointer;font:inherit}
+.lang button:first-child{border-radius:8px 0 0 8px}.lang button:last-child{border-radius:0 8px 8px 0;border-left:0}
+.lang button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+.warn{background:var(--mob);color:var(--text);border-left:4px solid var(--mo);font-size:.88rem}
+input[type=search]{width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:999px;padding:4px 12px;cursor:pointer;font:inherit;font-size:.88rem}
+.chip.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+label.sev{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:.9rem}
+.res{border-radius:10px;padding:10px 12px;margin-top:8px;border-left:5px solid}
+.res b{display:block}.res small{color:var(--mute)}
+.hi{background:var(--hib);border-color:var(--hi)}.mo{background:var(--mob);border-color:var(--mo)}
+.lo{background:var(--lob);border-color:var(--lo)}.no{background:var(--nob);border-color:var(--no)}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;padding:1px 8px;border-radius:999px;margin-left:6px}
+.hi .tag{color:var(--hi)}.mo .tag{color:var(--mo)}.lo .tag{color:var(--lo)}.no .tag{color:var(--no)}
+.tabs{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}.tabs button{flex:1;min-width:140px;padding:8px 12px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;cursor:pointer;font:inherit}.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+h2{font-size:1rem;margin:0 0 4px}
+.ref{font-size:.8rem;color:var(--mute)}
+.rec{border-left:5px solid var(--accent)}.rec ul{margin:6px 0 0;padding-left:20px}.rec li{margin:5px 0}
+.vh{background:#fdeaea;border-color:#c62828}.vh .tag{color:#c62828}
+.h{background:#ffe0b2;border-color:#ef6c00}.h .tag{color:#e65100}
+.m{background:#fff9c4;border-color:#f9a825}.m .tag{color:#8d6e00}
+.l{background:#e8f5e9;border-color:#2e7d32}.l .tag{color:#2e7d32}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .vh{background:#3a1d1d;border-color:#ff8a80}:root:not([data-theme="light"]) .vh .tag{color:#ff8a80}
+:root:not([data-theme="light"]) .h{background:#4a2e10;border-color:#ffa726}:root:not([data-theme="light"]) .h .tag{color:#ffb74d}
+:root:not([data-theme="light"]) .m{background:#3d3a14;border-color:#fdd835}:root:not([data-theme="light"]) .m .tag{color:#fff176}
+:root:not([data-theme="light"]) .l{background:#1a2f1d;border-color:#81c784}:root:not([data-theme="light"]) .l .tag{color:#81c784}}
+:root[data-theme="dark"] .vh{background:#3a1d1d;border-color:#ff8a80}:root[data-theme="dark"] .vh .tag{color:#ff8a80}
+:root[data-theme="dark"] .h{background:#4a2e10;border-color:#ffa726}:root[data-theme="dark"] .h .tag{color:#ffb74d}
+:root[data-theme="dark"] .m{background:#3d3a14;border-color:#fdd835}:root[data-theme="dark"] .m .tag{color:#fff176}
+:root[data-theme="dark"] .l{background:#1a2f1d;border-color:#81c784}:root[data-theme="dark"] .l .tag{color:#81c784}
+</style>
+</head>
+<body>
+<main>
+<p style="margin:0 0 8px"><a href="index.html" style="color:var(--accent)">← หน้าหลัก / Home</a></p>
+<header>
+<div><h1 id="t"></h1><p class="sub" id="st"></p></div>
+
+</header>
+<div class="tabs"><button id="tbl"></button><button id="tae"></button><button id="tns"></button><button id="tsf"></button><button id="tfq"></button><button id="tmr"></button><button id="ths"></button><button id="tst"></button><button id="tpp"></button><button id="tla"></button><button id="toi"></button><button id="tic"></button></div>
+<div class="card warn" id="disc"></div>
+<div class="card">
+<h2 id="h1s"></h2>
+<input type="search" id="q">
+<div class="sugg" id="list"></div>
+</div>
+<div class="card" id="sevcard"><h2 id="hsev"></h2><label class="sev"><input type="checkbox" id="sev"><span id="sevt"></span></label></div>
+<div class="card rec" id="reccard"><h2 id="hrec"></h2><ul id="rec"></ul></div>
+<div class="card"><h2 id="h2s"></h2><div id="out"></div></div>
+<p class="ref" id="ref"></p>
+<p class="ref">This page collects anonymous visit statistics (page views and which drugs are selected) using GoatCounter, without cookies. No patient data is collected.</p>
+</main>
+<script>
+// group: R1 side-chain group. A = amoxicillin-like, B = ampicillin-like, C = ceftriaxone-like (methoxyimino), D = ceftazidime-like
+var D=[
+["penG","เพนิซิลลิน จี","Penicillin G","P",""],["penV","เพนิซิลลิน วี","Penicillin V","P",""],
+["pip","พิเพอราซิลลิน (± ทาโซแบคแทม)","Piperacillin (± tazobactam)","P",""],["amp","แอมพิซิลลิน","Ampicillin","P",""],
+["amox","อะม็อกซีซิลลิน (± คลาวูลาเนต)","Amoxicillin (± clavulanate)","P",""],["pivm","พิเวมซิลลินาม","Pivmecillinam","P",""],
+["flu","ฟลูคล็อกซาซิลลิน","Flucloxacillin","P",""],["dic","ไดคล็อกซาซิลลิน","Dicloxacillin","P",""],
+["cfd","เซฟาดรอกซิล","Cefadroxil","C0",""],["cfa","เซฟาทริซีน","Cefatrizine","C0",""],["cex","เซฟาเลกซิน","Cephalexin","C0",""],["cfz","เซฟาโซลิน","Cefazolin","C0",""],["cph","เซฟาโลทิน","Cephalothin","C0",""],["cfr","เซฟาดีน","Cefradine","C0",""],
+["cfo","เซฟอกซิติน","Cefoxitin","C0",""],["cfu","เซฟูร็อกซิม","Cefuroxime","C0",""],["cft","เซฟโอทิแอม","Cefotiam","C0",""],["cfp","เซฟโพรซิล","Cefprozil","C0",""],["cfc","เซฟาคลอร์","Cefaclor","C0",""],["cfn","เซฟโอนิซิด","Cefonicid","C0",""],["cfm","เซฟาแมนดอล","Cefamandole","C0",""],["cfrm","เซฟโฟรามิด","Ceforamide","C0",""],["lor","โลราคาร์เบฟ","Loracarbef","C0",""],["cpz","เซฟโฟเพอราโซน","Cefoperazone","C0",""],
+["tbn","เซฟทิบูเทน","Ceftibuten","C0",""],["cfx","เซฟิซิม","Cefixime","C0",""],["cro","เซฟไตรอะโซน","Ceftriaxone","C0",""],["cdt","เซฟดิโทเรน","Cefditoren","C0",""],["cdz","เซฟโอไดซิม","Cefodizime","C0",""],["ctx","เซโฟแทกซิม","Cefotaxime","C0",""],["cpd","เซฟโพโดซิม","Cefpodoxime","C0",""],["ctz","เซฟติโซซิม","Ceftizoxime","C0",""],["ctm","เซฟีทาเมต","Cefetamet","C0",""],["caz","เซฟตาซิดีม","Ceftazidime","C0",""],
+["fep","เซฟีพีม","Cefepime","C0",""],["cpr","เซฟไพโรม","Cefpirome","C0",""],
+["ctf","เซโฟรอลีน ฟอสามิล","Cefotaroline fosamil","C0",""],["cto","เซฟโทโลซาน","Ceftolozane","C0",""],["cfi","เซฟิเดอโรคอล","Cefiderocol","C0",""],
+["atm","อซตรีโอนัม","Aztreonam","M",""],
+["mem","เมโรพีเนม","Meropenem","CP",""],["imi","อิมิพีเนม","Imipenem","CP",""],["ert","เออร์ทาพีเนม","Ertapenem","CP",""]
+].map(function(r){return{id:r[0],th:r[1],en:r[2],cls:r[3],g:r[4]}});
+var CL={P:["เพนิซิลลิน","Penicillin"],C0:["เซฟาโลสปอริน","Cephalosporin"],CP:["คาร์บาพีเนม","Carbapenem"],M:["โมโนแบคแทม","Monobactam"]};
+var L={th:{t:"ตรวจสอบ Cross-reactivity ของยากลุ่ม β-lactam",st:"เลือกยาที่ผู้ป่วยแพ้ แล้วดูยาที่อาจแพ้ข้ามกลุ่ม",
+disc:"⚠ เครื่องมือนี้จัดทำขึ้นเพื่อเป็นแนวคิดในการจัดการผู้ป่วยที่สงสัยแพ้ยาให้ปลอดภัยและไม่ให้เสียโอกาสการใช้ยา การนำไปใช้ควรพิจารณาปรับตามข้อมูลผู้ป่วย และความจำเป็นในการได้รับยาร่วมกับแพทย์ผู้รักษาเป็นสำคัญ A decision-support aid for healthcare professionals only; not a diagnosis and not a substitute for individual patient assessment or drug allergy testing.",
+h1:"1. เลือกยาที่ผู้ป่วยแพ้",h2:"2. ผลการประเมิน",ph:"ค้นหาชื่อยา (ไทย/อังกฤษ)",
+sev:"ประวัติแพ้รุนแรงแบบล่าช้า (SJS/TEN, DRESS, ไตอักเสบจากภูมิแพ้ ฯลฯ) – ควรหลีกเลี่ยงยาทั้งกลุ่มและปรึกษาผู้เชี่ยวชาญ",
+empty:"ยังไม่ได้เลือกยา",hi:"ความเสี่ยงสูง",mo:"ปานกลาง",lo:"ต่ำ",no:"แทบไม่พบ",
+r_same:"โครงสร้างข้างสาย R1 เหมือนกัน",r_sim:"โครงสร้างข้างสาย R1 คล้ายกัน",r_pen:"เป็นกลุ่มเพนิซิลลินด้วยกัน (วงแหวน β-lactam และแกนเดียวกัน) ควรหลีกเลี่ยง",
+r_cep:"R1 ต่างกัน โอกาสแพ้ข้ามต่ำ (โดยทั่วไปน้อยกว่า ~2%)",r_carb:"โอกาสแพ้ข้ามกับคาร์บาพีเนมต่ำ (โดยทั่วไปน้อยกว่า 1%)",r_atm:"อซตรีโอนัมไม่แพ้ข้ามกับ β-lactam อื่น ยกเว้นเซฟตาซิดีมและเซฟิซิม",
+r_sev:"แพ้รุนแรงแบบล่าช้า: หลีกเลี่ยงทั้งกลุ่ม β-lactam จนกว่าผู้เชี่ยวชาญประเมิน",
+ref:"อ้างอิงหลัก: Khan DA et al. Drug allergy: a 2022 practice parameter update. J Allergy Clin Immunol 2022; Zagursky RJ, Pichichero ME. J Allergy Clin Immunol Pract 2018 (ข้อมูลตัวอย่าง ต้องตรวจทานก่อนใช้จริง)"},
+en:{t:"β-lactam Cross-reactivity Checker",st:"Select the drugs the patient is allergic to and see possible cross-reactive drugs",
+disc:"⚠ เครื่องมือนี้จัดทำขึ้นเพื่อเป็นแนวคิดในการจัดการผู้ป่วยที่สงสัยแพ้ยาให้ปลอดภัยและไม่ให้เสียโอกาสการใช้ยา การนำไปใช้ควรพิจารณาปรับตามข้อมูลผู้ป่วย และความจำเป็นในการได้รับยาร่วมกับแพทย์ผู้รักษาเป็นสำคัญ A decision-support aid for healthcare professionals only; not a diagnosis and not a substitute for individual patient assessment or drug allergy testing.",
+h1:"1. Select the culprit drug(s)",h2:"2. Assessment",ph:"Search drug name (Thai/English)",
+sev:"History of severe delayed reaction (SJS/TEN, DRESS, allergic nephritis, etc.): avoid the whole class and consult a specialist",
+empty:"No drug selected yet",hi:"High risk",mo:"Moderate",lo:"Low",no:"Negligible",
+r_same:"Identical R1 side chain",r_sim:"Similar R1 side chain",r_pen:"Both penicillins (shared β-lactam ring and core): avoid",
+r_cep:"Dissimilar R1; cross-reactivity is low (generally under ~2%)",r_carb:"Cross-reactivity with carbapenems is low (generally under 1%)",r_atm:"Aztreonam does not cross-react with other β-lactams, except ceftazidime and cefixime",
+r_sev:"Severe delayed reaction: avoid all β-lactams until assessed by a specialist",
+ref:"Main references: Khan DA et al. Drug allergy: a 2022 practice parameter update. J Allergy Clin Immunol 2022; Zagursky RJ, Pichichero ME. J Allergy Clin Immunol Pract 2018. (Sample data; review before real use.)"}};
+var DB=D,ruleB=rule,grp="bl";
+var E=[["cbz","คาร์บามาซีพีน","Carbamazepine","AR"],["pht","ฟีนิทอยน์","Phenytoin","AR"],["fph","ฟอสฟีนิทอยน์","Fosphenytoin","AR"],["pb","ฟีโนบาร์บิทาล","Phenobarbital","AR"],["prm","ไพรมิโดน","Primidone","AR"],
+["oxc","ออกซ์คาร์บาซีพีน","Oxcarbazepine","OX"],["esl","เอสลิคาร์บาซีพีน","Eslicarbazepine","OX"],["ltg","ลาโมไตรจีน","Lamotrigine","OT"],["zns","โซนิซาไมด์","Zonisamide","OT"],
+["vpa","โซเดียมวัลโพรเอต","Valproate","NA"],["lev","เลวีไทราซีแทม","Levetiracetam","NA"],["gbp","กาบาเพนติน","Gabapentin","NA"],["pgb","พรีกาบาลิน","Pregabalin","NA"],["lcm","ลาโคซาไมด์","Lacosamide","NA"],["tpm","โทพิราเมต","Topiramate","NA"]
+].map(function(r){return{id:r[0],th:r[1],en:r[2],cls:r[3],g:""}});
+CL.AR=["อะโรมาติกคลาสสิก","Classic aromatic"];CL.OX=["กลุ่ม oxcarbazepine","Oxcarbazepine-type"];CL.OT=["อะโรมาติกอื่น ๆ","Other aromatic"];CL.NA=["ไม่ใช่อะโรมาติก","Non-aromatic"];
+function rule2(a,t){
+ if(a.cls==="NA"||t.cls==="NA")return["lo","r_na"];
+ if(a.cls==="OX"&&t.cls==="OX")return["hi","r_oxox"];
+ if(a.cls==="AR"&&t.cls==="AR")return["hi","r_ar"];
+ if(a.cls==="OT"||t.cls==="OT")return["hi","r_ot"];
+ return["hi","r_ox"];}
+Object.assign(L.th,{tbl:"β-lactam",tae:"ยากันชักกลุ่มอะโรมาติก",t2:"ตรวจสอบ Cross-reactivity ของยากันชักกลุ่มอะโรมาติก",st2:"เลือกยาที่ผู้ป่วยแพ้ แล้วดูยากันชักที่อาจแพ้ข้ามกลุ่ม",
+sev2:"ประวัติแพ้รุนแรง (SJS/TEN, DRESS) – ควรหลีกเลี่ยงยากันชักกลุ่มอะโรมาติกทั้งหมดและปรึกษาผู้เชี่ยวชาญ",
+r_ar:"เป็นกลุ่มอะโรมาติกด้วยกัน (เมแทบอลิซึมผ่าน arene oxide คล้ายกัน) รายงานแพ้ข้ามราว 40–80% ขึ้นกับชนิดอาการ ควรหลีกเลี่ยง",
+r_oxox:"oxcarbazepine และ eslicarbazepine มีเมแทบอไลต์ออกฤทธิ์ร่วมกัน ถือว่าแพ้ข้ามกัน",
+r_ox:"โครงสร้างใกล้เคียงกับ carbamazepine/กลุ่มอะโรมาติก รายงานแพ้ข้ามราว 25–30% หรือมากกว่า ควรหลีกเลี่ยงหากเคยแพ้รุนแรง",
+r_ot:"ลาโมไตรจีน/โซนิซาไมด์ มีรายงานแพ้ข้ามกับกลุ่มอะโรมาติกได้ (ความเสี่ยงปานกลาง) ใช้ด้วยความระมัดระวัง",
+r_na:"ไม่มีโครงสร้างอะโรมาติกที่เกี่ยวข้อง ไม่คาดว่าจะแพ้ข้าม แต่ผู้ป่วยอาจแพ้ยาตัวใหม่ได้เอง ควรติดตามอาการ",
+r_sev2:"เคยแพ้รุนแรง: หลีกเลี่ยงยากันชักกลุ่มอะโรมาติกทั้งหมด พิจารณายากลุ่มไม่ใช่อะโรมาติกและปรึกษาผู้เชี่ยวชาญ",
+ref2:"อ้างอิงหลัก: CPIC guideline HLA genotype and carbamazepine/oxcarbazepine (Phillips EJ et al. Clin Pharmacol Ther 2018); CPIC guideline CYP2C9/HLA-B and phenytoin (Karnes JH et al. Clin Pharmacol Ther 2021) ตัวเลขแพ้ข้ามมาจากรายงานในวรรณกรรม ต้องตรวจเทียบต้นฉบับก่อนใช้จริง หมายเหตุ: ประชากรไทยมีความชุก HLA-B*15:02 สูง ควรพิจารณาตรวจก่อนเริ่ม carbamazepine ตามแนวทางที่เกี่ยวข้อง"});
+Object.assign(L.en,{tbl:"β-lactams",tae:"Aromatic anticonvulsants",t2:"Aromatic Anticonvulsant Cross-reactivity Checker",st2:"Select the drugs the patient is allergic to and see possible cross-reactive anticonvulsants",
+sev2:"History of severe reaction (SJS/TEN, DRESS): avoid all aromatic anticonvulsants and consult a specialist; ประวัติแพ้รุนแรง (SJS/TEN, DRESS) – หลีกเลี่ยงยากันชักกลุ่มอะโรมาติกทั้งกลุ่ม พิจารณายากลุ่มไม่ใช่อะโรมาติก",
+r_ar:"Aromatic anticonvulsants (similar arene oxide metabolism); reported cross-reactivity roughly 40–80% depending on reaction type: avoid; – ควรหลีกเลี่ยงยากันชักกลุ่มอะโรมาติกทั้งกลุ่ม",
+r_oxox:"Oxcarbazepine and eslicarbazepine share an active metabolite: treat as cross-reactive – ควรหลีกเลี่ยงยากันชักกลุ่มอะโรมาติกทั้งกลุ่ม",
+r_ox:"Structurally related to carbamazepine and aromatic agents; reported cross-reactivity about 25–30% or more: avoid if the prior reaction was severe – ควรหลีกเลี่ยงยากันชักกลุ่มอะโรมาติกทั้งกลุ่ม ",
+r_ot:"Lamotrigine and zonisamide have reported cross-reactivity with aromatic agents (moderate risk): use with caution – มีรายงานแพ้ข้ามกับกลุ่มอะโรมาติกได้ ควรหลีกเลี่ยงยากันชักกลุ่มอะโรมาติกทั้งกลุ่ม",
+r_na:"No related aromatic structure; cross-reactivity is not expected, but a new drug can still cause its own reaction, so monitor – ไม่มีโครงสร้างอะโรมาติกที่เกี่ยวข้อง แต่ผู้ป่วยอาจแพ้ยาตัวใหม่ได้เอง ควรติดตามอาการ",
+r_sev2:"Prior severe reaction: avoid all aromatic anticonvulsants; consider non-aromatic agents and consult a specialist – เคยแพ้รุนแรง: หลีกเลี่ยงยากันชักกลุ่มอะโรมาติกทั้งหมด พิจารณายากลุ่มไม่ใช่อะโรมาติกและปรึกษาผู้เชี่ยวชาญ",
+ref2:"Main references: CPIC guideline for HLA genotype and carbamazepine/oxcarbazepine (Phillips EJ et al. Clin Pharmacol Ther 2018); CPIC guideline for CYP2C9/HLA-B and phenytoin (Karnes JH et al. Clin Pharmacol Ther 2021). Cross-reactivity figures come from published reports and must be verified against the originals before real use. Note: HLA-B*15:02 is common in the Thai population; consider testing before starting carbamazepine per applicable guidance."});
+var N=[['asa','แอสไพริน','Aspirin','NSA'],['dic','ไดโคลฟีแนค','Diclofenac','NAC'],['ind','อินโดเมทาซิน','Indomethacin','NAC'],['ket','คีโตโรแลค','Ketorolac','NAC'],['sul','ซูลินแดค','Sulindac','NAC'],['ibu','ไอบูโพรเฟน','Ibuprofen','NPR'],['npx','นาพรอกเซน','Naproxen','NPR'],['kpf','คีโตโพรเฟน','Ketoprofen','NPR'],['pir','พิร็อกซิแคม','Piroxicam','NOX'],['mel','เมลอกซิแคม','Meloxicam','NOX'],['mef','เมเฟนามิกแอซิด','Mefenamic acid','NFA'],['met','เมทามิโซล (ไดไพโรน)','Metamizole (dipyrone)','NPY'],['cel','เซเลคอกซิบ','Celecoxib','NC2'],['eto','อีโทริค็อกซิบ','Etoricoxib','NC2'],['par','พาราเซตามอล','Paracetamol','NPC']].map(function(r){return{id:r[0],th:r[1],en:r[2],cls:r[3],g:''}});
+var S=[['smx','โคไตรม็อกซาโซล (SMX-TMP)','Co-trimoxazole (SMX-TMP)','SA'],['sdz','ซัลฟาไดอะซีน','Sulfadiazine','SA'],['ssd','ซิลเวอร์ซัลฟาไดอะซีน (ทาเฉพาะที่)','Silver sulfadiazine (topical)','SA'],['ssz','ซัลฟาซาลาซีน','Sulfasalazine','SA'],['dap','แดปโซน','Dapsone','SD'],['fur','ฟูโรเซไมด์','Furosemide','SN'],['hct','ไฮโดรคลอโรไทอะไซด์','Hydrochlorothiazide','SN'],['ctd','คลอร์ทาลิโดน','Chlorthalidone','SN'],['acz','อะเซตาโซลาไมด์','Acetazolamide','SN'],['cel2','เซเลคอกซิบ','Celecoxib','SN'],['zn2','โซนิซาไมด์','Zonisamide','SN'],['glb','ไกลเบนคลาไมด์','Glibenclamide','SN'],['glm','ไกลเมพิไรด์','Glimepiride','SN'],['glc','ไกลคลาไซด์','Gliclazide','SN'],['sum','ซูมาทริปแทน','Sumatriptan','SN']].map(function(r){return{id:r[0],th:r[1],en:r[2],cls:r[3],g:''}});
+Object.assign(CL,{NSA:['แอสไพริน/ซาลิไซเลต','Salicylate'],NAC:['กรดอะซีติก','Acetic acid'],NPR:['กรดโพรพิโอนิก','Propionic acid'],NOX:['ออกซิแคม','Oxicam'],NFA:['เฟนาเมต','Fenamate'],NPY:['ไพราโซโลน','Pyrazolone'],NC2:['ยับยั้ง COX-2 จำเพาะ','COX-2 selective'],NPC:['พาราเซตามอล','Paracetamol'],SA:['ยาปฏิชีวนะกลุ่มซัลโฟนาไมด์','Sulfonamide antibiotic'],SD:['ซัลโฟน','Sulfone'],SN:['ซัลโฟนาไมด์ที่ไม่ใช่ยาปฏิชีวนะ','Non-antibiotic sulfonamide']});
+function rule3(a,t){var x=document.getElementById('sev').checked;
+ if(a.cls==='NC2'||a.cls==='NPC')return['lo','r_selx'];
+ if(t.cls==='NC2')return['lo','r_c2'];
+ if(x){if(t.cls==='NPC')return['lo','r_pc'];if(t.id==='mel')return['mo','r_mel'];if(t.cls==='NPY')return['mo','r_cox1w'];return['hi','r_cox1'];}
+ if(t.cls===a.cls)return['mo','r_samecls'];
+ return['lo','r_dif'];}
+function rule4(a,t){var x=document.getElementById('sev').checked;
+ if(x&&a.cls!=='SN')return t.cls==='SN'?['mo','r_sev4']:['hi','r_sev4b'];
+ if(a.cls==='SA'&&t.cls==='SA')return['hi','r_sa'];
+ if(a.cls==='SD'||t.cls==='SD')return a.cls===t.cls?['hi','r_sa']:(a.cls==='SN'||t.cls==='SN'?['lo','r_sn']:['mo','r_sd']);
+ if(a.cls==='SN'&&t.cls==='SN')return['lo','r_snsn'];
+ return['lo','r_sn'];}
+Object.assign(L.th,{tns:'NSAIDs',tsf:'ซัลโฟนาไมด์',t3:'ตรวจสอบ Cross-reactivity ของยากลุ่ม NSAIDs',st3:'เลือกยาที่ผู้ป่วยแพ้ และระบุรูปแบบการแพ้เพื่อดูยาที่อาจแพ้ข้ามกลุ่ม',
+sev3:'รูปแบบ cross-reactive: เคยแพ้ NSAIDs หลายตัวที่โครงสร้างต่างกัน (เช่น หอบหืด ลมพิษ หรือบวมจาก NSAIDs) ถ้าไม่ติ๊ก = แพ้เฉพาะยาตัวเดียวหรือกลุ่มเคมีเดียวกัน',
+r_cox1:'ยับยั้ง COX-1 เหมือนกัน ในรูปแบบ cross-reactive มักแพ้หลายตัวพร้อมกัน ควรหลีกเลี่ยง',r_cox1w:'ยับยั้ง COX-1 ได้อ่อน มีรายงานแพ้ข้ามในรูปแบบ cross-reactive ใช้ด้วยความระมัดระวัง',
+r_c2:'ยับยั้ง COX-2 จำเพาะ โดยทั่วไปทนได้ แต่ควรทดสอบขนาดยาภายใต้การดูแลก่อนใช้',r_pc:'พาราเซตามอลขนาดต่ำ (ไม่เกิน ~500 มก./ครั้ง) มักทนได้ ขนาดสูงอาจกระตุ้นอาการในบางราย',
+r_mel:'เมลอกซิแคมขนาดต่ำยับยั้ง COX-2 เป็นหลัก บางรายทนได้ แต่ขนาดสูงอาจแพ้ ควรทดสอบภายใต้การดูแล',r_selx:'การแพ้ยาตัวนี้มักจำเพาะต่อตัวยา ไม่คาดว่าจะแพ้ข้าม NSAIDs อื่น',
+r_samecls:'กลุ่มเคมีเดียวกัน อาจแพ้ข้ามได้ในรูปแบบแพ้เฉพาะยา ผลต่างกันในแต่ละราย ควรหลีกเลี่ยงหรือทดสอบ',r_dif:'กลุ่มเคมีต่างกัน ในรูปแบบแพ้เฉพาะยามักทนได้',
+ref3:'อ้างอิงหลัก: Kowalski ML et al. EAACI/ENDA position paper on NSAID hypersensitivity. Allergy 2013; Khan DA et al. Drug allergy: a 2022 practice parameter update. J Allergy Clin Immunol 2022 (ข้อมูลตัวอย่าง ต้องตรวจทานก่อนใช้จริง)',
+t4:'ตรวจสอบ Cross-reactivity ของยากลุ่มซัลโฟนาไมด์',st4:'เลือกยาที่ผู้ป่วยแพ้ แล้วดูยากลุ่มซัลโฟนาไมด์ที่อาจแพ้ข้ามกลุ่ม',sev4:'เคยแพ้รุนแรงต่อซัลโฟนาไมด์ยาปฏิชีวนะ (SJS/TEN, DRESS) ใช้ความระมัดระวังสูงสุด',
+r_sa:'มีหมู่ arylamine และวงแหวน N1 ร่วมกัน (หรือเป็นกลุ่มเดียวกัน) ควรหลีกเลี่ยง',r_sd:'ซัลโฟน (dapsone) มี arylamine คล้ายกัน มีรายงานแพ้ข้ามได้ ข้อมูลจำกัด ใช้ด้วยความระมัดระวัง',
+r_sn:'ไม่มี arylamine และวงแหวน N1 ที่เป็นสาเหตุของการแพ้ ยังไม่พบแพ้ข้ามชัดเจน (มักอธิบายด้วยแนวโน้มแพ้ยาของผู้ป่วยเอง)',r_snsn:'ไม่พบ cross-reactivity ที่สม่ำเสมอระหว่างซัลโฟนาไมด์ที่ไม่ใช่ยาปฏิชีวนะ ควรติดตามอาการ',
+r_sev4:'เคยแพ้รุนแรง: ไม่มีหลักฐานแพ้ข้ามชัดเจน แต่ควรพิจารณายาทางเลือกหรือปรึกษาผู้เชี่ยวชาญก่อนใช้',r_sev4b:'เคยแพ้รุนแรง: หลีกเลี่ยง และปรึกษาผู้เชี่ยวชาญ',
+ref4:'อ้างอิงหลัก: Strom BL et al. N Engl J Med 2003 (sulfonamide antibiotics และ non-antibiotic sulfonamides); Khan DA et al. Drug allergy: a 2022 practice parameter update. J Allergy Clin Immunol 2022 (ข้อมูลตัวอย่าง ต้องตรวจทานก่อนใช้จริง)'});
+Object.assign(L.en,{tns:'NSAIDs',tsf:'Sulfonamides',t3:'NSAID Cross-reactivity Checker',st3:'Select the culprit drug(s) and the reaction pattern to see possible cross-reactive drugs',
+sev3:'Cross-reactive pattern: reacted to several structurally different NSAIDs (e.g. NSAID-induced asthma, urticaria or angioedema). Unchecked = reaction to a single drug or chemical class',
+r_cox1:'Shares COX-1 inhibition; in the cross-reactive pattern several NSAIDs usually trigger reactions: avoid',r_cox1w:'Weak COX-1 inhibitor; cross-reactions reported in the cross-reactive pattern: use with caution',
+r_c2:'COX-2 selective; generally tolerated, but a supervised challenge is advised before use',r_pc:'Low-dose paracetamol (up to about 500 mg) is usually tolerated; higher doses may trigger symptoms in some patients',
+r_mel:'Low-dose meloxicam acts mainly on COX-2 and may be tolerated, but higher doses can react: supervised challenge advised',r_selx:'Reactions to this drug are usually drug-specific; cross-reactivity with other NSAIDs is not expected',
+r_samecls:'Same chemical class; cross-reactivity is possible with drug-specific reactions and varies between patients: avoid or test',r_dif:'Different chemical class; usually tolerated in drug-specific reactions',
+ref3:'Main references: Kowalski ML et al. EAACI/ENDA position paper on NSAID hypersensitivity. Allergy 2013; Khan DA et al. Drug allergy: a 2022 practice parameter update. J Allergy Clin Immunol 2022 (sample data; review before real use)',
+t4:'Sulfonamide Cross-reactivity Checker',st4:'Select the culprit drug(s) to see possible cross-reactive sulfonamide-containing drugs',sev4:'Previous severe reaction to a sulfonamide antibiotic (SJS/TEN, DRESS): use maximum caution',
+r_sa:'Shares the arylamine group and N1 ring (or is the same group): avoid',r_sd:'Dapsone (a sulfone) shares an arylamine; cross-reactions reported, data limited: use with caution',
+r_sn:'Lacks the arylamine and N1 ring responsible for allergy; no clear cross-reactivity shown (often explained by the patient general tendency to drug allergy)',r_snsn:'No consistent cross-reactivity between non-antibiotic sulfonamides; monitor',
+r_sev4:'Prior severe reaction: no clear cross-reactivity evidence, but consider alternatives or specialist advice before use',r_sev4b:'Prior severe reaction: avoid and consult a specialist',
+ref4:'Main references: Strom BL et al. N Engl J Med 2003 (sulfonamide antibiotics vs non-antibiotic sulfonamides); Khan DA et al. Drug allergy: a 2022 practice parameter update. J Allergy Clin Immunol 2022 (sample data; review before real use)'});
+var SRC='Source: allergy management algorithm from the Drug and Poison Information Center, Pharmacy Department, Suratthani Hospital (rev. 1, Nov 2021): a concept for safely managing suspected drug allergy without losing treatment options, not an official practice guideline. ';
+function mk(map,pfx){var o=[];Object.keys(map).forEach(function(c){map[c].split('|').forEach(function(n,i){o.push({id:pfx+c+i,th:n,en:n,cls:c,g:''})})});return o}
+var FQ=mk({Q1:'Nalidixic acid|Cinoxacin',Q2:'Norfloxacin|Ciprofloxacin|Levofloxacin|Ofloxacin|Lomefloxacin',Q3:'Sparfloxacin|Gatifloxacin|Grepafloxacin|Pefloxacin',Q4:'Moxifloxacin|Trovafloxacin|Gemifloxacin|Sitafloxacin'},'q');
+var MR=mk({MP:'Eperisone|Tolperisone',ME:'Orphenadrine'},'m');
+var HS=mk({HAL:'Brompheniramine:1|Chlorpheniramine:1|Dexchlorpheniramine:1|Pheniramine:1|Dimethindene:1|Triprolidine:1|Acrivastine:3',HET:'Carbinoxamine:1|Clemastine:1|Dimenhydrinate:1|Diphenhydramine:1|Doxylamine:1',HED:'Antazoline:1|Pyrilamine:1|Tripelenamine:1',HPH:'Promethazine:1|Mequitazine:1|Trimeprazine:1',HPZ:'Buclizine:1|Cyclizine:1|Meclizine:1|Oxatomide:1|Hydroxyzine:1|Cetirizine:2|Levocetirizine:3',HPD:'Azatadine:1|Ketotifen:1|Cyproheptadine:1|Loratadine:2|Ebastine:2|Terfenadine:2|Levocabastine:2|Mizolastine:2|Rupatadine:3|Desloratadine:3|Bilastine:3|Fexofenadine:3'},'h');
+HS.forEach(function(d){var p=d.th.split(':');d.th=p[0];d.en=p[0]+' ('+['','1st gen','2nd gen','3rd gen'][+p[1]]+')'});
+var ST=mk({CA:'Hydrocortisone|Hydrocortisone acetate|Methylprednisolone|Prednisone|Prednisolone|Prednisolone acetate|Prednisolone caproate|Fludrocortisone acetate|Tixocortol pivalate|Cortisone acetate',CB:'Budesonide|Triamcinolone|Triamcinolone acetonide|Desonide|Fluocinonide|Fluocinolone acetonide|Amcinonide|Flunisolide|Halcinonide',CC:'Betamethasone|Dexamethasone|Desoxymethasone|Desoximetasone|Fluocortolone|Fluocortolone and esters|Halomethasone|Fluprednidene acetate|Fluticasone',CD1:'Beclomethasone dipropionate|Betamethasone dipropionate|Betamethasone-17-valerate|Clobetasol propionate|Clobetasone butyrate|Diflorasone diacetate|Mometasone furoate|Fluticasone propionate|Diflucortolone valerate|Alclometasone-17,21-dipropionate',CD2:'Methylprednisolone aceponate|Hydrocortisone valerate|Hydrocortisone-17-butyrate|Hydrocortisone-17-buteprate|Hydrocortisone-17-aceponate|Prednicarbate'},'s');
+var CLN={Q1:'First generation',Q2:'Second generation',Q3:'Third generation',Q4:'Fourth generation',MP:'Piperidine type',ME:'Ethanolamine type',HAL:'Alkylamine',HET:'Ethanolamine',HED:'Ethylenediamine',HPH:'Phenothiazine',HPZ:'Piperazine',HPD:'Piperidine',CA:'Group A (hydrocortisone type)',CB:'Group B (triamcinolone acetonide type)',CC:'Group C (betamethasone type)',CD1:'Group D1 (betamethasone dipropionate type)',CD2:'Group D2 (methylprednisolone aceponate type)'};
+Object.keys(CLN).forEach(function(k){CL[k]=[CLN[k],CLN[k]]});
+function rule5(a,t){return document.getElementById('sev').checked?['hi','r_fq_sev']:['mo','r_fq_mild']}
+function rule6(a,t){var x=document.getElementById('sev').checked;
+ if(a.cls==='MP'&&t.cls==='MP')return['hi','r_mr_pip'];
+ if(a.cls==='MP')return['mo',x?'r_mr_o1':'r_mr_o2'];
+ return t.cls==='ME'?['hi','r_mr_pip']:['mo',x?'r_mr_p1':'r_mr_p2'];}
+function rule7(a,t){if(document.getElementById('sev').checked)return['hi','r_hs_sev'];
+ if(a.cls===t.cls)return['hi','r_hs_same'];
+ if((a.cls==='HPZ'&&t.cls==='HPD')||(a.cls==='HPD'&&t.cls==='HPZ'))return['mo','r_hs_pp'];
+ return['mo','r_hs_diff'];}
+function rule8(a,t){if(document.getElementById('sev').checked)return['hi','r_st_sev'];
+ if(a.cls===t.cls)return['hi','r_st_same'];
+ if(t.cls==='CC')return['lo','r_st_c'];
+ var p=function(x,y){return x==='CA'&&y==='CD2'||x==='CB'&&(y==='CD1'||y==='CD2')};
+ if(p(a.cls,t.cls)||p(t.cls,a.cls))return['mo','r_st_x'];
+ return['lo','r_st_diff'];}
+var SEVTXT='Severe reaction: anaphylaxis, angioedema/urticaria with respiratory involvement, DRESS, SJS, TEN, AGEP. Unchecked = mild (angioedema/urticaria without respiratory involvement, maculopapular rash, pruritus)';
+Object.assign(L.en,{tfq:'Fluoroquinolones',tmr:'Muscle relaxants',ths:'Antihistamines (H1)',tst:'Corticosteroids',
+t5:'Fluoroquinolone Allergy Management Checker',st5:'Select the culprit fluoroquinolone(s) and the reaction severity',sev5:SEVTXT+', severe photosensitivity',
+r_fq_sev:'Severe reaction: avoid the culprit and the whole class (shared core structure; cross-allergy reported up to about 50%). If the drug is essential, consult an allergist about skin testing or desensitization under supervision',
+r_fq_mild:'Mild reaction: avoid the culprit. Another fluoroquinolone may be considered with close monitoring only if the patient has tolerated one before; if allergic to another or no history, avoid the whole class',
+ref5:SRC+'References cited there: McGee EU et al. Pharmacy (Basel) 2019;7(3):97; Pichler WJ, Hausmann O. Int Arch Allergy Immunol 2016;171:166-179. Note: lomefloxacin, pefloxacin, sparfloxacin and trovafloxacin may cause photosensitivity; advise avoiding direct and indirect UV exposure.',
+t6:'Oral Muscle Relaxant Allergy Management Checker',st6:'Select the culprit muscle relaxant(s) and the reaction severity',sev6:SEVTXT+'. If the culprit is unknown, avoid muscle relaxants',
+r_mr_pip:'Very similar chemical structure (piperidine type); each is a contraindication for the other in product information: avoid',
+r_mr_o1:'Different class (ethanolamine). Choose only if the patient has previously tolerated diphenhydramine; if allergic or never used, avoid muscle relaxants',
+r_mr_o2:'Different class (ethanolamine). Choose only if the patient has previously tolerated diphenhydramine; if allergic or never used, avoid muscle relaxants, or if essential choose a different drug class and monitor for ADR',
+r_mr_p1:'Different class (piperidine type). Choose only if the patient has previously tolerated lidocaine; if allergic or never used, avoid muscle relaxants',
+r_mr_p2:'Different class (piperidine type). Choose only if the patient has previously tolerated lidocaine; if allergic or never used, avoid muscle relaxants, or if essential choose a different drug class and monitor for ADR',
+ref6:SRC+'Published cross-allergy data are lacking for this group; both immediate and delayed reactions have been reported. References: Quasthoff S et al. CNS Neurosci Ther 2008;14:107-119; PDR drug summary for orphenadrine citrate injection.',
+t7:'H1-Antihistamine Allergy Management Checker',st7:'Select the culprit antihistamine(s) and the reaction severity',sev7:SEVTXT,
+r_hs_sev:'Severe reaction: avoid all H1-antagonists; the patient may react to several of them',
+r_hs_same:'Same chemical class as the culprit: avoid',
+r_hs_pp:'Different class but similar structure (piperazine and piperidine): cross-allergy possible, use caution',
+r_hs_diff:'Different structure: may be chosen only if the patient has tolerated another H1-antagonist; if allergic to others or no history, avoid the whole group',
+ref7:SRC+'Data on cross-allergy within this group are limited. Reference: Criado PR et al. An Bras Dermatol 2010;85(2):195-210.',
+t8:'Systemic Corticosteroid Allergy Management Checker',st8:'Select the culprit corticosteroid(s) and the reaction severity',sev8:SEVTXT,
+r_st_sev:'Severe reaction: avoid the culprit and the whole group of systemic corticosteroids; if essential, consult an allergist',
+r_st_same:'Same structural group as the culprit: avoid',
+r_st_c:'Group C (betamethasone type) is suggested because it has the fewest cross-allergy reports; choose a group different from the culprit',
+r_st_x:'Cross-allergy has been studied between groups A and D2 and between groups B and D1/D2: use caution',
+r_st_diff:'Different structural group: may be considered with monitoring; no clear cross-allergy pattern is established for systemic corticosteroids',
+ref8:SRC+'No clear cross-allergy pattern has been established for systemic corticosteroids; more data are needed. References: Ramirez R, Brancaccio RR. Allergic cutaneous reactions to systemic corticosteroids; Matura M. Contact Dermatitis 1998;38:225-226.'});
+var PP=mk({PPI:'Omeprazole|Esomeprazole|Lansoprazole|Pantoprazole|Rabeprazole'},'p');
+var LA=mk({LE:'Procaine|Chloroprocaine|Tetracaine|Benzocaine',LA:'Lidocaine|Mepivacaine|Bupivacaine|Levobupivacaine|Ropivacaine|Prilocaine|Articaine',LU:'Unknown local anesthetic'},'l');
+CL.PPI=['Benzimidazole PPI','Benzimidazole PPI'];CL.LE=['Ester type','Ester type'];CL.LA=['Amide type','Amide type'];CL.LU=['Culprit not known','Culprit not known'];
+function rule9(a,t){return document.getElementById('sev').checked?['hi','r_ppi_sev']:['mo','r_ppi_mild']}
+function rule10(a,t){var i=document.getElementById('sev').checked?'1':'2';
+ if(a.cls==='LU')return t.th==='Lidocaine'?['lo','r_la_l'+i]:['mo','r_la_u'+i];
+ return['mo','r_la_k'+i];}
+Object.assign(L.en,{tpp:'PPIs',tla:'Local anesthetics',
+t9:'Proton Pump Inhibitor Allergy Management Checker',st9:'Select the culprit PPI(s) and the reaction severity',sev9:SEVTXT,
+r_ppi_sev:'Severe reaction: avoid all PPIs (shared benzimidazole-pyridine core) and consider an alternative drug; if a PPI is essential, consult an allergist',
+r_ppi_mild:'Mild reaction: avoid the whole PPI class; or, if a PPI is necessary, choose a single different agent and monitor the patient after use; or choose an alternative drug. Cross-allergy reports are limited and varied',
+ref9:SRC+'References cited there: Elfau MTS et al. J Investig Allergol Clin Immunol 2010;20(2):157-161; Ozdemir SK. Int Arch Allergy Immunol 2016;171:54-60; Lombardo C, Bonadonna P. Curr Treat Options Allergy 2015;2:110-123.',
+t10:'Local Anesthetic Allergy Pre-procedure Checker',st10:'Select the local anesthetic linked to the past reaction (or Unknown) and the reaction type',
+sev10:'Immediate reaction: onset under 1 hour of pruritus, urticaria, angioedema, bronchospasm or hypotension, not limited to the injection site. Unchecked = delayed reaction (onset about 3 to 72 hours: localized dermatitis, swelling or mucosal inflammation at the injection site). Palpitations, tachycardia, anxiety or vasovagal symptoms alone are likely non-allergic and local anesthetics can be given normally',
+r_la_k1:'Possible IgE-mediated (type I) reaction. If the procedure is urgent: choose a different local anesthetic from the culprit, or avoid local anesthetics if possible. If elective or can be postponed: refer to an allergist for skin testing',
+r_la_k2:'Possible cell-mediated (type IV) reaction, rarely dangerous. If urgent: choose a different local anesthetic from the culprit, or avoid local anesthetics if possible. If elective or can be postponed: refer for patch testing (usually to a dermatologist)',
+r_la_u1:'Culprit not known; possible type I reaction. If urgent: choose lidocaine, or avoid local anesthetics if possible. If elective or can be postponed: refer to an allergist for skin testing',
+r_la_u2:'Culprit not known; possible type IV reaction. If urgent: choose lidocaine, or avoid local anesthetics if possible. If elective or can be postponed: refer for patch testing (usually to a dermatologist)',
+r_la_l1:'Preferred when the culprit is unknown and the procedure is urgent: lidocaine is widely used, anaphylaxis reports are few, and tolerance has been seen even after earlier reported reactions. If elective: refer to an allergist for skin testing',
+r_la_l2:'Preferred when the culprit is unknown and the procedure is urgent: lidocaine is widely used, with few anaphylaxis reports. If elective or can be postponed: refer for patch testing (usually to a dermatologist)',
+ref10:'Source: UpToDate graphic 117594 v1.0, Preprocedural evaluation and management of suspected history of local anesthetic (LA) allergy if LA would ordinarily be used (paraphrased). Decisions to delay a procedure for testing depend on the risks of delay and the risks and benefits of LA versus other anesthesia or analgesia. This flowchart does not describe class-level cross-reactivity (ester or amide labels here are for information only); confirm a safe alternative with an allergist. Not an official practice guideline.'});
+var OI=mk({OPH:'Morphine|Codeine|Hydromorphone|Oxycodone|Oxymorphone|Hydrocodone|Buprenorphine|Nalbuphine',OPP:'Fentanyl|Sufentanil|Remifentanil|Alfentanil|Meperidine (Pethidine)',OPD:'Methadone|Propoxyphene',OPA:'Tramadol|Tapentadol',OBZ:'Pentazocine|Loperamide|Diphenoxylate'},'o');
+Object.assign(CL,{OPH:['Phenanthrene','Phenanthrene'],OPP:['Phenylpiperidine','Phenylpiperidine'],OPD:['Diphenylheptane','Diphenylheptane'],OPA:['Phenylpropylamine','Phenylpropylamine'],OBZ:['Benzomorphan','Benzomorphan']});
+function rule11(a,t){
+ if(a.cls===t.cls)return a.cls==='OPH'?['hi','r_op_phen']:['mo','r_op_intra'];
+ if((a.cls==='OPH'&&t.cls==='OBZ')||(a.cls==='OBZ'&&t.cls==='OPH'))return['mo','r_op_bz'];
+ return['lo','r_op_lo'];}
+Object.assign(L.en,{toi:'Opioids',t11:'Opioid Cross-reactivity Checker',st11:'Select the culprit opioid(s) to see cross-reactivity risk by chemical structure',sev11:'',
+r_op_phen:'Same phenanthrene group (shared 6-hydroxyl core): high cross-reactivity risk within this group',
+r_op_intra:'Same structural group: intra-group cross-reactivity is the more common pattern and is possible here; use caution',
+r_op_bz:'Possible risk: benzomorphans share some structural features with phenanthrenes (morphine), so cross-reactivity may occur; use with caution',
+r_op_lo:'Different structural group: cross-reactivity is low (structure clearly different)',
+ref11:'Source: opioid cross-reactivity risk by chemical structure (reference table), with chemical classes from Powell MZ, Mueller SW, Reynolds PM. Assessment of opioid cross-reactivity and provider perceptions in hospitalized patients with reported opioid allergies. Ann Pharmacother 2019;53(11):1117-1123. Nalbuphine, sufentanil, remifentanil and alfentanil are placed as in the reference table; buprenorphine appears under phenanthrenes in the original classification. The source does not distinguish reaction type or severity: for a severe or immediate reaction, consult an allergist. Not an official practice guideline.'});
+var IC=mk({GA:'Ioxitalamate meglumine sodium (Telebrix)|Iopamidol (Iopamiro, Isovue) *|Iodixanol (Visipaque) *|Iomeprol (Iomeron)|Ioversol (Optiray) *|Iohexol (Omnipaque)|Iopromide (Ultravist) *',GB:'Iobitridol (Xenetix)|Ioxaglate meglumine sodium (Hexabrix)',GC:'Diatrizoate (amidotrizoate) meglumine sodium (Gastrografin)|Diatrizoate (amidotrizoate) meglumine (Cystografin)',GU:'Iothalamate meglumine (Conray)|Iopanoic acid|Iotroxic acid|Metrizoate|Ioxilan (Oxilan)',GD:'Gadobenate dimeglumine (MultiHance) *|Gadoteric acid (Dotarem) *|Gadoxetate disodium (Primovist) *'},'c');
+Object.assign(CL,{GA:['Group A','Group A (iodinated)'],GB:['Group B','Group B (iodinated)'],GC:['Group C','Group C (iodinated)'],GU:['Not grouped','Iodinated, not placed in a group'],GD:['Gadolinium','Gadolinium-based (non-iodinated)']});
+function rule12(a,t){
+ if(a.cls==='GD'||t.cls==='GD')return['no','r_icm_gd'];
+ if(document.getElementById('sev').checked)return['hi','r_icm_sev'];
+ if(a.cls!=='GU'&&a.cls===t.cls)return['hi','r_icm_same'];
+ if(a.cls==='GU'||t.cls==='GU')return['mo','r_icm_u'];
+ return['mo','r_icm_diff'];}
+Object.assign(L.en,{tic:'Contrast media',t12:'Iodinated Contrast Media (ICM) Allergy Checker',st12:'Select the culprit contrast medium and the reaction severity',sev12:SEVTXT,
+r_icm_gd:'No cross-reactivity between gadolinium-based and iodinated contrast media (per source); a possible alternative if contrast imaging is still needed',
+r_icm_sev:'Severe reaction: avoid all iodinated contrast media. Alternatives: gadolinium-based contrast, another imaging method, or CT without contrast. If an ICM is essential, change to another ICM or group with close monitoring and follow-up',
+r_icm_same:'Same group as the culprit (similar core structure, high chance of cross-allergy): avoid',
+r_icm_diff:'Different group (different structure): may be chosen together with premedication and close monitoring',
+r_icm_u:'Not placed in a cross-reactivity group in the source: cross-reactivity cannot be excluded; if the agent is necessary, use premedication and close monitoring',
+ref12:'Source: Roi Et Hospital ADR Monitoring Center, algorithm for management of suspected iodinated contrast media allergy (2 Jan 2024). * = stocked at Roi Et Hospital. Groups follow the source: Group A (ioxitalamate, iopamidol, iodixanol, iomeprol, ioversol, iohexol, iopromide; all except ioxitalamate share an N-(2,3-dihydroxypropyl)carbamoyl side chain), Group B (iobitridol, ioxaglate), Group C (amidotrizoate; diatrizoate is the same compound). Evidence for cross-allergy among ICM is fairly weak and awaits further studies. Mild reaction with prior use tolerated or no data: may be true allergy or pseudoallergy; use premedication or avoid the whole group, and if an ICM is necessary choose one with lower osmolality together with premedication. High-osmolality agents cause anaphylactoid reactions more easily than low-osmolality agents. Seafood allergy is not a contraindication, but ICM allergy is reported 2 to 3 times more often in these patients: use with care. Risk factors: for immediate reactions, a previous moderate or severe immediate reaction or asthma; for delayed reactions, a previous reaction to ICM or allergy to many agents. Hospital premedication protocol: prednisolone 5 mg 10 tablets at 13, 7 and 1 hours before the scan; cetirizine 10 mg 1 tablet and famotidine 20 mg 1 tablet at 13 and 1 hours before. A corticosteroid given less than 6 hours before contrast does not prevent the reaction.'});
+var RC_M='Patients with a history of allergy: consider rechallenge via consent form (ผู้ป่วยที่มีประวัติแพ้ ให้พิจารณา rechallenge via consent form).';
+var RC_S='History of severe reaction (anaphylaxis, SJS/TEN, DRESS, AGEP): rechallenge is not suggested; avoid the culprit and consult an allergist or specialist (ประวัติแพ้รุนแรง: ไม่แนะนำ rechallenge ควรหลีกเลี่ยงยาที่แพ้และปรึกษาผู้เชี่ยวชาญ).';
+var RECS={def:{m:[RC_M],s:[RC_S]},
+ns:{m:[RC_M],s:['Cross-reactive pattern: avoid the COX-1 inhibiting NSAIDs; if an alternative is needed, a COX-2 selective drug or low-dose paracetamol may be considered after a supervised challenge.']},
+la:{m:['Elective or can be postponed: refer for allergy skin testing (delayed reaction: patch testing, usually by a dermatologist).','Urgent: choose a different local anesthetic (lidocaine if the culprit is not known), or avoid local anesthetics if possible.'],s:['Elective or can be postponed: refer for allergy skin testing (delayed reaction: patch testing, usually by a dermatologist).','Urgent: choose a different local anesthetic (lidocaine if the culprit is not known), or avoid local anesthetics if possible.']}};
+Object.assign(L.en,{h2:'4. Assessment'});
+var lang="en",sel=[],RK={no:0,lo:1,mo:2,hi:3,l:1,m:2,h:3,vh:4};
+function rule(a,t){
+ if(a.cls==="CP"||t.cls==="CP")return["no","r_cp_nodata"];
+ var c=BPAIR[a.id+"|"+t.id];
+ if(!c)return["no","r_nopair"];
+ return[c,"r_"+c];}
+var BPAIR={},BPS="flu-dic:m penG-penV:l penG-pip:l penG-amp:l penG-amox:l penG-cfd:m penG-cfa:m penG-cex:m penG-cfp:m penG-cfc:m penG-cfn:m penG-cfm:m penG-cfrm:m penG-lor:m penG-cpz:l penV-pip:l penV-amp:l penV-amox:l penV-cfd:m penV-cfa:m penV-cex:m penV-cfp:m penV-cfc:m penV-cfn:m penV-cfm:m penV-cfrm:m penV-lor:m penV-cpz:l pip-amp:h pip-amox:l pip-cfd:l pip-cfa:l pip-cex:h pip-cfp:l pip-cfc:h pip-cfn:l pip-cfm:l pip-cfrm:m pip-lor:h pip-cpz:h amp-amox:l amp-cfd:m amp-cfa:m amp-cex:vh amp-cfr:m amp-cfp:m amp-cfc:vh amp-cfn:m amp-cfm:m amp-cfrm:m amp-lor:vh amp-cpz:l amox-cfd:vh amox-cfa:vh amox-cex:m amox-cfr:m amox-cfp:vh amox-cfc:m amox-cfn:m amox-cfm:m amox-cfrm:m amox-lor:m amox-cpz:h cfd-cfa:vh cfd-cex:m cfd-cfr:m cfd-cfp:vh cfd-cfc:m cfd-cfn:m cfd-cfm:m cfd-cfrm:m cfd-lor:m cfd-cpz:h cfa-cex:m cfa-cfr:m cfa-cfp:vh cfa-cfc:m cfa-cfn:m cfa-cfm:m cfa-cfrm:m cfa-lor:m cfa-cpz:h cfa-cft:m cex-cfr:m cex-cfc:vh cex-cfp:m cex-cfn:m cex-cfm:m cex-cfrm:m cex-lor:vh cex-cpz:h cph-cfo:vh cph-cfu:m cph-ctx:vh cfr-cfp:m cfr-cfc:m cfr-lor:m cfo-cfu:vh cft-cfn:m cft-cfm:m cft-cfrm:m cft-cpz:m cfu-cfx:l cfu-cro:h cfu-cdt:h cfu-cdz:h cfu-ctx:h cfu-cpd:h cfu-ctz:h cfu-ctm:h cfu-caz:l cfu-fep:h cfu-cpr:h cfu-ctf:l cfu-cto:l cfu-cfi:h cfu-atm:l cfp-cfc:m cfp-cfn:m cfp-cfm:m cfp-cfrm:m cfp-lor:m cfp-cpz:h cfc-cfn:m cfc-cfm:m cfc-cpz:l cfn-cfm:vh cfn-cfrm:m cfn-lor:m cfn-cpz:m cfm-cfrm:m cfm-lor:m cfm-cpz:vh cfrm-lor:m cfrm-cpz:m lor-cpz:l tbn-cft:h tbn-cpz:h tbn-cro:h tbn-cfx:l tbn-cdt:h tbn-cdz:h tbn-ctx:h tbn-cpd:h tbn-ctz:h tbn-ctm:h tbn-caz:h tbn-fep:h tbn-cpr:h tbn-cfi:h tbn-atm:h cfx-cft:h cfx-cro:h cfx-cdt:h cfx-cdz:h cfx-ctx:h cfx-cpd:h cfx-ctz:h cfx-ctm:h cfx-caz:vh cfx-fep:h cfx-cpr:h cfx-ctf:l cfx-cto:l cfx-cfi:h cfx-atm:vh cro-cdt:vh cro-cdz:vh cro-ctx:vh cro-cpd:vh cro-ctz:vh cro-ctm:vh cro-caz:h cro-fep:vh cro-cpr:vh cro-ctf:h cro-cto:h cro-cfi:h cro-atm:h cdt-cdz:vh cdt-ctx:vh cdt-cpd:vh cdt-ctz:vh cdt-ctm:vh cdt-caz:h cdt-fep:vh cdt-cpr:vh cdt-ctf:h cdt-cto:h cdt-cfi:h cdt-atm:h cdz-ctx:vh cdz-cpd:vh cdz-ctz:vh cdz-ctm:vh cdz-caz:h cdz-fep:vh cdz-cpr:vh cdz-ctf:h cdz-cto:h cdz-cfi:h cdz-atm:h ctx-cpd:vh ctx-ctz:vh ctx-ctm:vh ctx-caz:h ctx-fep:vh ctx-cpr:vh ctx-ctf:h ctx-cto:h ctx-cfi:h ctx-atm:h cpd-ctz:vh cpd-ctm:vh cpd-caz:h cpd-fep:vh cpd-cpr:vh cpd-ctf:h cpd-cto:h cpd-cfi:h cpd-atm:h ctz-ctm:vh ctz-caz:h ctz-fep:vh ctz-cpr:vh ctz-ctf:h ctz-cto:h ctz-cfi:h ctz-atm:h ctm-caz:h ctm-fep:vh ctm-cpr:vh ctm-ctf:h ctm-cto:h ctm-cfi:h ctm-atm:h caz-fep:h caz-cpr:h caz-ctf:l caz-cto:h caz-cfi:vh caz-atm:vh fep-cpr:h fep-ctf:m fep-cto:h fep-cfi:h fep-atm:h cpr-ctf:h cpr-cto:h cpr-cfi:h cpr-atm:h ctf-cto:m ctf-cfi:m ctf-atm:l cto-cfi:m cto-atm:l cfi-atm:vh";
+BPS.split(" ").forEach(function(x){if(!x)return;var p=x.split(":"),ab=p[0].split("-");BPAIR[ab[0]+"|"+ab[1]]=p[1];BPAIR[ab[1]+"|"+ab[0]]=p[1];});
+Object.assign(L.th,{vh:"สูงมาก",h:"สูง",m:"ปานกลาง",l:"ต่ำ",
+r_vh:"side chain R1 หรือ R2 เหมือนกัน: หลีกเลี่ยง",
+r_h:"side chain บางส่วนเหมือนกัน (R1′/R1″): ความเสี่ยงสูง",
+r_m:"side chain R1/R2 คล้ายกัน (r1/r2): ความเสี่ยงปานกลาง",
+r_l:"side chain บางส่วนคล้ายกัน (r1′/r1″): ความเสี่ยงต่ำ",
+r_nopair:"ไม่พบโครงสร้าง side chain ที่เหมือนหรือคล้ายกันในตารางต้นทาง",
+r_cp_nodata:"คาร์บาพีเนมไม่อยู่ในตารางต้นทาง จึงไม่มีข้อมูลการแพ้ข้ามในเครื่องมือนี้",
+ref:"อ้างอิงหลัก: Algorithm for management Beta-lactam Hypersensitivity (ตารางจากภาพต้นฉบับ ลงวันที่ 27/03/2567) สี: แดง = R1/R2 เหมือนกัน (สูงมาก), ส้ม = R1′/R1″ เหมือนกันบางส่วน (สูง), เหลือง = r1/r2 คล้ายกัน (ปานกลาง), เขียว = r1′/r1″ คล้ายกันบางส่วน (ต่ำ). ต้องตรวจทานกับต้นฉบับก่อนใช้จริง"});
+Object.assign(L.en,{vh:"Very high",h:"High",m:"Moderate",l:"Low",
+r_vh:"Identical R1 or R2 side chain: avoid",
+r_h:"Partially identical side chain (R1′/R1″): high risk",
+r_m:"Similar R1/R2 side chain (r1/r2): moderate risk",
+r_l:"Partially similar side chain (r1′/r1″): low risk",
+r_nopair:"No shared or similar side chain listed in the source table",
+r_cp_nodata:"Carbapenems are not in the source table, so this tool gives no cross-reactivity data for them",
+ref:"Main reference: Algorithm for management Beta-lactam Hypersensitivity (table from source figure dated 27/03/2567). Colours: red = identical R1/R2 side chain (very high), orange = partially identical R1′/R1″ (high), yellow = similar r1/r2 (moderate), green = partially similar r1′/r1″ (low). Verify against the original before real use."});
+function track(p){try{if(window.goatcounter&&window.goatcounter.count)window.goatcounter.count({path:p,title:p,event:true})}catch(e){}}
+function esc(s){return s.replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+function render(){
+ var D={bl:DB,ae:E,ns:N,sf:S,fq:FQ,mr:MR,hs:HS,st:ST,pp:PP,la:LA,oi:OI,ic:IC}[grp],rule={bl:ruleB,ae:rule2,ns:rule3,sf:rule4,fq:rule5,mr:rule6,hs:rule7,st:rule8,pp:rule9,la:rule10,oi:rule11,ic:rule12}[grp];
+ var T=L[lang],i=lang==="th"?0:1,qv=document.getElementById("q").value.toLowerCase();
+ document.documentElement.lang=lang;
+ var s={bl:'',ae:'2',ns:'3',sf:'4',fq:'5',mr:'6',hs:'7',st:'8',pp:'9',la:'10',oi:'11',ic:'12'}[grp];document.getElementById('sevcard').style.display=grp==='oi'?'none':'';['fq','mr','hs','st','pp','la','oi','ic'].forEach(function(g){var b=document.getElementById('t'+g);b.textContent=T['t'+g];b.className=grp===g?'on':''});document.getElementById('tns').textContent=T.tns;document.getElementById('tsf').textContent=T.tsf;document.getElementById('tns').className=grp==='ns'?'on':'';document.getElementById('tsf').className=grp==='sf'?'on':'';
+ ["t","st","disc","h1s","h2s","sevt","ref"].forEach(function(k){var m={t:"t"+s,st:"st"+s,disc:"disc",h1s:"h1",h2s:"h2",sevt:"sev"+s,ref:"ref"+s};document.getElementById(k).textContent=T[m[k]]});
+ document.getElementById("tbl").textContent=T.tbl;document.getElementById("tae").textContent=T.tae;
+ document.getElementById("tbl").className=grp==="bl"?"on":"";document.getElementById("tae").className=grp==="ae"?"on":"";
+ document.getElementById("q").placeholder=T.ph;
+ document.getElementById("hsev").textContent={ns:'2. Reaction pattern',la:'2. Reaction type'}[grp]||'2. History of severe reaction';
+ document.getElementById("hrec").textContent='3. Recommendations';
+ var sv=grp==='oi'?false:document.getElementById('sev').checked;
+ document.getElementById('rec').innerHTML=(RECS[grp]||RECS.def)[sv?'s':'m'].map(function(x){return '<li>'+x+'</li>'}).join('');
+ 
+ document.getElementById("list").innerHTML=D.filter(function(d){return !qv||(d.th+d.en).toLowerCase().indexOf(qv)>-1}).map(function(d){
+  return '<button class="chip'+(sel.indexOf(d.id)>-1?" sel":"")+'" data-id="'+d.id+'">'+esc(i?d.en:d.th)+'</button>'}).join("");
+ var out=document.getElementById("out");
+ if(!sel.length){out.innerHTML='<p class="sub">'+T.empty+'</p>';return}
+ var A=D.filter(function(d){return sel.indexOf(d.id)>-1}),sev=document.getElementById("sev").checked;
+ var rows=D.filter(function(d){return sel.indexOf(d.id)<0&&d.cls!=='LU'}).map(function(t){
+  var best=["no",null],why=[];
+  A.forEach(function(a){var r=rule(a,t);if(RK[r[0]]>RK[best[0]])best=r});
+  if(sev){if(grp==='bl')best=['vh','r_sev'];else if(grp==='ae'&&t.cls!=='NA')best=['hi','r_sev2'];}
+  return{t:t,lv:best[0],rs:best[1]}}).sort(function(x,y){return RK[y.lv]-RK[x.lv]});
+ out.innerHTML=rows.map(function(r){
+  return '<div class="res '+r.lv+'"><b>'+esc(i?r.t.en:r.t.th)+'<span class="tag">'+T[r.lv]+'</span></b><small>'+CL[r.t.cls][i]+' · '+T[r.rs]+'</small></div>'}).join("");
+}
+document.getElementById("list").addEventListener("click",function(e){var id=e.target.getAttribute("data-id");if(!id)return;
+ var k=sel.indexOf(id);if(k>-1)sel.splice(k,1);else{sel.push(id);track('select/'+grp+'/'+id)}render()});
+document.getElementById("q").addEventListener("input",render);
+document.getElementById("sev").addEventListener("change",function(){track('flag/'+grp+'/'+(this.checked?'on':'off'));render()});
+
+
+document.getElementById("tbl").onclick=function(){grp="bl";sel=[];track('tab/bl');render()};
+document.getElementById("tae").onclick=function(){grp="ae";sel=[];track('tab/ae');render()};
+document.getElementById('tns').onclick=function(){grp='ns';sel=[];track('tab/ns');render()};
+document.getElementById('tsf').onclick=function(){grp='sf';sel=[];track('tab/sf');render()};
+['fq','mr','hs','st','pp','la','oi','ic'].forEach(function(g){document.getElementById('t'+g).onclick=function(){grp=g;sel=[];track('tab/'+g);render()}});
+render();
+</script>
+<script data-goatcounter="https://reh-adrm.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
